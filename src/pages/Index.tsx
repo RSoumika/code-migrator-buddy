@@ -1,13 +1,19 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { Helmet } from "react-helmet-async";
+import MigrationWorkspace from "@/components/MigrationWorkspace";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <>
+      <Helmet>
+        <title>CodeMigrate AI - Transform Legacy JavaScript to Modern ES6+ & TypeScript</title>
+        <meta 
+          name="description" 
+          content="AI-powered code migration tool that converts legacy JavaScript to modern ES6+ modules or TypeScript with proper type definitions. View diffs, export files, and track migration history." 
+        />
+        <meta name="keywords" content="code migration, JavaScript, ES6, TypeScript, AI, legacy code, modernization" />
+      </Helmet>
+      <MigrationWorkspace />
+    </>
   );
 };
 
