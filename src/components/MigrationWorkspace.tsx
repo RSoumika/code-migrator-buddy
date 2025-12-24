@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import CodeEditor from "@/components/CodeEditor";
 import DiffViewer from "@/components/DiffViewer";
 import TargetSelector from "@/components/TargetSelector";
@@ -83,107 +84,60 @@ const MigrationWorkspace = () => {
 
     setIsLoading(true);
     
-    // Simulate AI migration (will be replaced with actual API call)
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Generate mock migrated code based on target
-    const mockMigrated = targetFormat === "typescript" 
-      ? generateTypeScriptMock(sourceCode)
-      : generateES6Mock(sourceCode);
-    
-    setMigratedCode(mockMigrated);
-    setShowDiff(true);
-    
-    // Save session
-    const newSession: MigrationSession = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      originalCode: sourceCode,
-      migratedCode: mockMigrated,
-      targetFormat,
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setSelectedSession(newSession.id);
-    
-    setIsLoading(false);
-    
-    toast({
-      title: "Migration complete!",
-      description: `Your code has been converted to ${targetFormat === "typescript" ? "TypeScript" : "ES6+"}.`,
-    });
-  };
+    try {
+      const { data, error } = await supabase.functions.invoke('migrate-code', {
+        body: { code: sourceCode, targetFormat }
+      });
 
-  const generateES6Mock = (code: string) => {
-    return `// Migrated to ES6+ Modules
-export class UserManager {
-  users = [];
+      if (error) {
+        console.error('Migration error:', error);
+        toast({
+          title: "Migration failed",
+          description: error.message || "Failed to migrate code. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
-  addUser(name, email) {
-    const user = {
-      id: Date.now(),
-      name,
-      email,
-      createdAt: new Date()
-    };
-    this.users.push(user);
-    return user;
-  }
+      if (!data?.migratedCode) {
+        toast({
+          title: "Migration failed",
+          description: "No migrated code returned. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
-  findUser(id) {
-    return this.users.find(user => user.id === id) ?? null;
-  }
-
-  removeUser(id) {
-    this.users = this.users.filter(user => user.id !== id);
-  }
-}
-
-// Usage
-const manager = new UserManager();
-manager.addUser('John', 'john@example.com');
-console.log(manager.findUser(1));`;
-  };
-
-  const generateTypeScriptMock = (code: string) => {
-    return `// Migrated to TypeScript
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  createdAt: Date;
-}
-
-export class UserManager {
-  private users: User[] = [];
-
-  public addUser(name: string, email: string): User {
-    const user: User = {
-      id: Date.now(),
-      name,
-      email,
-      createdAt: new Date()
-    };
-    this.users.push(user);
-    return user;
-  }
-
-  public findUser(id: number): User | null {
-    return this.users.find(user => user.id === id) ?? null;
-  }
-
-  public removeUser(id: number): void {
-    this.users = this.users.filter(user => user.id !== id);
-  }
-
-  public getAllUsers(): readonly User[] {
-    return this.users;
-  }
-}
-
-// Usage
-const manager = new UserManager();
-manager.addUser('John', 'john@example.com');
-console.log(manager.findUser(1));`;
+      setMigratedCode(data.migratedCode);
+      setShowDiff(true);
+      
+      // Save session
+      const newSession: MigrationSession = {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        originalCode: sourceCode,
+        migratedCode: data.migratedCode,
+        targetFormat,
+      };
+      setSessions(prev => [newSession, ...prev]);
+      setSelectedSession(newSession.id);
+      
+      toast({
+        title: "Migration complete!",
+        description: `Your code has been converted to ${targetFormat === "typescript" ? "TypeScript" : "ES6+"}.`,
+      });
+    } catch (err) {
+      console.error('Migration error:', err);
+      toast({
+        title: "Migration failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCopy = async () => {
