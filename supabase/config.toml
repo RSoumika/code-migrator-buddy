@@ -1,0 +1,4 @@
+project_id = "ndormruxzcmswxfcmmim"
+
+[functions.migrate-code]
+verify_jwt = false
